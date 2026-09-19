@@ -1,0 +1,49 @@
+# Start Menu Editor
+
+A small WPF app for tidying the **All apps** list of the Windows 10 Start menu. It works directly on the shortcut files Windows builds that list from, so changes show up in the Start menu without restarting anything.
+
+> **Scope:** shortcuts and folders only. Editing Start **tiles** (pinned layout) is deliberately not supported.
+
+## Features
+
+- Browse both Start menu roots in one tree:
+  - **Current user** - `%AppData%\Microsoft\Windows\Start Menu\Programs`
+  - **All users** - `%ProgramData%\Microsoft\Windows\Start Menu\Programs`
+- Create, rename and delete folders and shortcuts. Deletes go to the Recycle Bin, so they can be undone.
+- Drag and drop a shortcut or folder into another folder to move it.
+- Edit a `.lnk` shortcut's target, arguments, start-in folder and comment. Only fields you change are written back, so shortcuts that point at special shell items are left intact.
+
+## Limitations
+
+- Changes under **All users** need the editor to be run as administrator. The status bar shows whether it is elevated.
+- `.url` and `.appref-ms` shortcuts are listed but read-only.
+- Microsoft Store / UWP apps don't have a `.lnk` in these folders (they live in `shell:AppsFolder`), so they can't be edited.
+- Start tiles and pinned layout are out of scope.
+
+## Requirements
+
+- Windows 10 or later
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) to build (the .NET 8 Desktop Runtime is enough to run a build)
+
+## Build and run
+
+```powershell
+dotnet build
+dotnet run
+```
+
+To edit the **All users** list, start the app from an elevated terminal (or right-click the built `StartMenuEditor.exe` and choose *Run as administrator*).
+
+## Project layout
+
+| Path | Purpose |
+|---|---|
+| `MainWindow.xaml(.cs)` | Tree view, toolbar, details panel and drag-and-drop |
+| `Prompt.cs` | Small modal text-input dialog |
+| `Models/StartMenuNode.cs` | Tree node for a root, folder or shortcut |
+| `Services/StartMenuService.cs` | Loads the folders and performs rename, delete, create and move |
+| `Services/ShellLink.cs` | Reads and writes `.lnk` files through the shell's `IShellLink` COM interface |
+
+## Status
+
+The project builds and starts. The file operations and shortcut editing have not yet been covered by automated tests, so try changes on a throwaway folder in the **Current user** root first.

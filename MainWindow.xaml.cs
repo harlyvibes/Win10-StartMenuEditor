@@ -19,18 +19,75 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ThemeService.Attach(this);
+        Loaded += (_, _) => SearchBox.Focus();
+        UpdateThemeButton();
         Reload();
         SetStatus(IsAdministrator()
             ? "Running as administrator."
             : "Not running as administrator - changes under \"All users\" will be refused.");
     }
 
-    private StartMenuNode? Selected => Tree.SelectedItem as StartMenuNode;
+    /// <summary>The selected node, or null if there is none or the search filter has hidden it.</summary>
+    private StartMenuNode? Selected => Tree.SelectedItem is StartMenuNode { IsVisible: true } node ? node : null;
 
     private void Reload()
     {
         Tree.ItemsSource = StartMenuService.Load();
+        ApplyFilterToTree();
         ShowDetails(null);
+    }
+
+    // ---- Search ----------------------------------------------------------------------------
+
+    /// <summary>Applies the search box text to every root and returns the number of matching nodes.</summary>
+    private int ApplyFilterToTree()
+    {
+        var matches = 0;
+        if (Tree.ItemsSource is IEnumerable<StartMenuNode> roots)
+        {
+            foreach (var root in roots)
+            {
+                root.ApplyFilter(SearchBox.Text);
+                matches += root.CountMatches();
+            }
+        }
+        return matches;
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var matches = ApplyFilterToTree();
+
+        // Keep the details panel in step with what is visible, without discarding unsaved edits
+        // when the selection has not actually changed.
+        if (!ReferenceEquals(Selected, _current)) ShowDetails(Selected);
+
+        var query = SearchBox.Text.Trim();
+        SetStatus(query.Length == 0 ? "Showing all items."
+            : matches == 0 ? $"No matches for \"{query}\"."
+            : $"{matches} match{(matches == 1 ? "" : "es")} for \"{query}\".");
+    }
+
+    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || SearchBox.Text.Length == 0) return;
+        SearchBox.Clear();
+        e.Handled = true;
+    }
+
+    private void ClearSearch_Click(object sender, RoutedEventArgs e)
+    {
+        SearchBox.Clear();
+        SearchBox.Focus();
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F || Keyboard.Modifiers != ModifierKeys.Control) return;
+        SearchBox.Focus();
+        SearchBox.SelectAll();
+        e.Handled = true;
     }
 
     private void SetStatus(string text) => StatusText.Text = text;
@@ -56,7 +113,7 @@ public partial class MainWindow : Window
             var hint = ex is UnauthorizedAccessException
                 ? "\n\nItems under \"All users\" need the editor to be run as administrator."
                 : "";
-            MessageBox.Show(this, ex.Message + hint, "Start Menu Editor", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Dialogs.Warn(this, ex.Message + hint);
             return false;
         }
         Reload();
@@ -71,6 +128,17 @@ public partial class MainWindow : Window
         Reload();
         SetStatus("Refreshed.");
     }
+
+    private void Theme_Click(object sender, RoutedEventArgs e)
+    {
+        ThemeService.Toggle();
+        UpdateThemeButton();
+        SetStatus(ThemeService.Current == AppTheme.Dark ? "Switched to dark mode." : "Switched to light mode.");
+    }
+
+    /// <summary>The button names the mode it will switch to.</summary>
+    private void UpdateThemeButton() =>
+        ThemeButton.Content = ThemeService.Current == AppTheme.Dark ? "☀  Light mode" : "☾  Dark mode";
 
     private void NewFolder_Click(object sender, RoutedEventArgs e)
     {
@@ -107,9 +175,7 @@ public partial class MainWindow : Window
             return;
         }
         var what = node.Kind == NodeKind.Folder ? "folder and everything in it" : "shortcut";
-        var answer = MessageBox.Show(this, $"Move the {what} \"{node.Name}\" to the Recycle Bin?",
-            "Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (answer != MessageBoxResult.Yes) return;
+        if (!Dialogs.Confirm(this, "Delete", $"Move the {what} \"{node.Name}\" to the Recycle Bin?", "Delete")) return;
         Run(() => StartMenuService.Delete(node), $"Deleted \"{node.Name}\".");
     }
 
@@ -158,8 +224,42 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {
-            MessageBox.Show(this, ex.Message, "Start Menu Editor", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Dialogs.Warn(this, ex.Message);
         }
+    }
+
+    // ---- Right-click menu and keyboard -----------------------------------------------------
+
+    /// <summary>A right-click does not select by default, so select the entry under the cursor first.</summary>
+    private void Tree_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (ItemAt(e.OriginalSource as DependencyObject) is not { } item) return;
+        item.IsSelected = true;
+        item.Focus();
+    }
+
+    private void Tree_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        // The keyboard menu key reports no cursor position (-1) and acts on the selection.
+        var fromMouse = e.CursorLeft >= 0;
+        var node = fromMouse ? NodeAt(e.OriginalSource as DependencyObject) : Selected;
+        if (node is null)
+        {
+            e.Handled = true; // nothing under the cursor, so no menu
+            return;
+        }
+
+        var editable = node.Kind != NodeKind.Root; // the two roots cannot be renamed or deleted
+        MenuRename.IsEnabled = editable;
+        MenuDelete.IsEnabled = editable;
+    }
+
+    private void Tree_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F2) Rename_Click(sender, e);
+        else if (e.Key == Key.Delete) Delete_Click(sender, e);
+        else return;
+        e.Handled = true;
     }
 
     // ---- Drag and drop (move into a folder) ------------------------------------------------
@@ -200,12 +300,14 @@ public partial class MainWindow : Window
         Run(() => StartMenuService.Move(source, destination), $"Moved \"{source.Name}\" to \"{destination.Name}\".");
     }
 
-    private static StartMenuNode? NodeAt(DependencyObject? element)
+    private static TreeViewItem? ItemAt(DependencyObject? element)
     {
         while (element is not null and not TreeViewItem)
             element = ParentOf(element);
-        return (element as TreeViewItem)?.DataContext as StartMenuNode;
+        return element as TreeViewItem;
     }
+
+    private static StartMenuNode? NodeAt(DependencyObject? element) => ItemAt(element)?.DataContext as StartMenuNode;
 
     // Text runs are content elements, not visuals, so they have no visual parent.
     private static DependencyObject? ParentOf(DependencyObject element) =>

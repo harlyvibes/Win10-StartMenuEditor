@@ -8,7 +8,12 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>StartMenuEditor</RootNamespace>
     <AssemblyName>StartMenuEditor</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The test project lives in a subfolder; keep its sources out of the app. -->

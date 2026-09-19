@@ -15,6 +15,9 @@ The exe is not code-signed, so Windows SmartScreen may show a warning the first 
 - Browse both Start menu roots in one tree:
   - **Current user** - `%AppData%\Microsoft\Windows\Start Menu\Programs`
   - **All users** - `%ProgramData%\Microsoft\Windows\Start Menu\Programs`
+- Search box at the top of the window (`Ctrl+F` to focus, `Esc` to clear): the tree filters as you type, matches are shown in bold, and a matching folder shows everything inside it.
+- Right-click any entry for **New folder**, **Rename** and **Delete**. `F2` renames and `Del` deletes the selected entry.
+- Dark and light themes. Dark is the default; the button at the top right switches, and your choice is remembered in `%AppData%\StartMenuEditor\settings.json`.
 - Create, rename and delete folders and shortcuts. Deletes go to the Recycle Bin, so they can be undone.
 - Drag and drop a shortcut or folder into another folder to move it.
 - Edit a `.lnk` shortcut's target, arguments, start-in folder and comment. Only fields you change are written back, so shortcuts that point at special shell items are left intact.
@@ -45,7 +48,9 @@ To edit the **All users** list, start the app from an elevated terminal (or righ
 | Path | Purpose |
 |---|---|
 | `MainWindow.xaml(.cs)` | Tree view, toolbar, details panel and drag-and-drop |
-| `Prompt.cs` | Small modal text-input dialog |
+| `Prompt.cs`, `Dialogs.cs` | Small modal dialogs, drawn by the app so they follow the theme |
+| `Themes/` | `DarkTheme.xaml` and `LightTheme.xaml` (colours only) and `Controls.xaml` (control styles that use them) |
+| `Services/ThemeService.cs`, `Services/ThemeSettings.cs` | Swaps the theme at runtime and saves the choice |
 | `Models/StartMenuNode.cs` | Tree node for a root, folder or shortcut |
 | `Services/StartMenuService.cs` | Loads the folders and performs rename, delete, create and move |
 | `Services/ShellLink.cs` | Reads and writes `.lnk` files through the shell's `IShellLink` COM interface |
@@ -56,7 +61,7 @@ To edit the **All users** list, start the app from an elevated terminal (or righ
 dotnet test tests\StartMenuEditor.Tests
 ```
 
-The xUnit tests run the service operations (load, rename, create folder, move, delete) against a temporary folder, and round-trip real `.lnk` files through the `ShellLink` wrapper. They never touch your actual Start menu. The two delete tests send a tiny temp item to the Recycle Bin each, since that is what the app does.
+The xUnit tests run the service operations (load, rename, create folder, move, delete) against a temporary folder, and round-trip real `.lnk` files through the `ShellLink` wrapper. They also cover the search filter and saving the theme choice. They never touch your actual Start menu. The two delete tests send a tiny temp item to the Recycle Bin each, since that is what the app does.
 
 ## Status
 

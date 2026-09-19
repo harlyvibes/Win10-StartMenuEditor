@@ -6,7 +6,9 @@ A small WPF app for tidying the **All apps** list of the Windows 10 Start menu. 
 
 ## Download
 
-Get the latest build from the [Releases page](https://github.com/harlyvibes/Win10-StartMenuEditor/releases) - download `StartMenuEditor-<version>-win-x64.exe` and run it. It is a self-contained single file for 64-bit Windows 10 or later, so no .NET install is needed. The SHA-256 checksum is listed in each release's notes.
+Get the latest build from the [latest release](https://github.com/harlyvibes/Win10-StartMenuEditor/releases/latest) - download `StartMenuEditor-<version>-win-x64.exe` and run it. It is a small single file for 64-bit Windows 10 or later that uses the .NET runtime already on your machine, so you need the **.NET 8 Desktop Runtime (x64)** installed. If it is missing, Windows will offer a link to install it, or get it from the [.NET 8 download page](https://dotnet.microsoft.com/download/dotnet/8.0). The SHA-256 checksum is listed in each release's notes.
+
+Releases up to v0.1.2 were self-contained (about 68 MB) and did not need the runtime.
 
 The exe is not code-signed, so Windows SmartScreen may show a warning the first time you run it. Choose **More info** > **Run anyway** if you trust the download.
 
@@ -15,6 +17,7 @@ The exe is not code-signed, so Windows SmartScreen may show a warning the first 
 - Browse both Start menu roots in one tree:
   - **Current user** - `%AppData%\Microsoft\Windows\Start Menu\Programs`
   - **All users** - `%ProgramData%\Microsoft\Windows\Start Menu\Programs`
+- Each root also shows entries that installers place directly in the `Start Menu` folder next to `Programs` (for example Corsair's `iCUE`), merged into one list the way Windows shows them. Selecting an entry shows its real location. New folders are created inside `Programs`.
 - Search box at the top of the window (`Ctrl+F` to focus, `Esc` to clear): the tree filters as you type, matches are shown in bold, and a matching folder shows everything inside it.
 - Right-click any entry for **New folder**, **Rename** and **Delete**. `F2` renames and `Del` deletes the selected entry.
 - Dark and light themes. Dark is the default; the button at the top right switches, and your choice is remembered in `%AppData%\StartMenuEditor\settings.json`.
@@ -31,8 +34,9 @@ The exe is not code-signed, so Windows SmartScreen may show a warning the first 
 
 ## Requirements
 
-- Windows 10 or later
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) to build (the .NET 8 Desktop Runtime is enough to run a build)
+- Windows 10 or later (64-bit)
+- To run: the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (x64)
+- To build: the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ## Build and run
 
@@ -42,6 +46,12 @@ dotnet run
 ```
 
 To edit the **All users** list, start the app from an elevated terminal (or right-click the built `StartMenuEditor.exe` and choose *Run as administrator*).
+
+To produce a release build (framework-dependent, so it does not bundle the .NET runtime):
+
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
+```
 
 ## Project layout
 
@@ -61,7 +71,7 @@ To edit the **All users** list, start the app from an elevated terminal (or righ
 dotnet test tests\StartMenuEditor.Tests
 ```
 
-The xUnit tests run the service operations (load, rename, create folder, move, delete) against a temporary folder, and round-trip real `.lnk` files through the `ShellLink` wrapper. They also cover the search filter and saving the theme choice. They never touch your actual Start menu. The two delete tests send a tiny temp item to the Recycle Bin each, since that is what the app does.
+The xUnit tests run the service operations (load, rename, create folder, move, delete) against a temporary folder, and round-trip real `.lnk` files through the `ShellLink` wrapper. They also cover the search filter, the merged `Programs` plus `Start Menu` view, and saving the theme choice. They never touch your actual Start menu. The two delete tests send a tiny temp item to the Recycle Bin each, since that is what the app does.
 
 ## Status
 

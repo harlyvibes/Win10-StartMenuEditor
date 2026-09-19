@@ -4,6 +4,12 @@ A small WPF app for tidying the **All apps** list of the Windows 10 Start menu. 
 
 > **Scope:** shortcuts and folders only. Editing Start **tiles** (pinned layout) is deliberately not supported.
 
+## Download
+
+Get the latest build from the [Releases page](https://github.com/harlyvibes/Win10-StartMenuEditor/releases) - download `StartMenuEditor-<version>-win-x64.exe` and run it. It is a self-contained single file for 64-bit Windows 10 or later, so no .NET install is needed. The SHA-256 checksum is listed in each release's notes.
+
+The exe is not code-signed, so Windows SmartScreen may show a warning the first time you run it. Choose **More info** > **Run anyway** if you trust the download.
+
 ## Features
 
 - Browse both Start menu roots in one tree:

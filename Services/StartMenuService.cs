@@ -21,9 +21,18 @@ public static class StartMenuService
     public static IReadOnlyList<StartMenuNode> Load()
     {
         var roots = new List<StartMenuNode>();
-        AddRoot(roots, "Current user", UserRoot);
-        AddRoot(roots, "All users", CommonRoot);
+        foreach (var root in new[] { LoadRoot("Current user", UserRoot), LoadRoot("All users", CommonRoot) })
+            if (root is not null) roots.Add(root);
         return roots;
+    }
+
+    /// <summary>Loads one folder tree, or returns null if the folder does not exist.</summary>
+    public static StartMenuNode? LoadRoot(string name, string path)
+    {
+        if (!Directory.Exists(path)) return null;
+        var root = new StartMenuNode(name, path, NodeKind.Root);
+        Populate(root);
+        return root;
     }
 
     public static string Rename(StartMenuNode node, string newName)
@@ -92,14 +101,6 @@ public static class StartMenuService
         if (node.Kind == NodeKind.Shortcut) File.Move(node.FullPath, target);
         else Directory.Move(node.FullPath, target);
         return target;
-    }
-
-    private static void AddRoot(List<StartMenuNode> roots, string name, string path)
-    {
-        if (!Directory.Exists(path)) return;
-        var root = new StartMenuNode(name, path, NodeKind.Root);
-        Populate(root);
-        roots.Add(root);
     }
 
     private static void Populate(StartMenuNode parent)

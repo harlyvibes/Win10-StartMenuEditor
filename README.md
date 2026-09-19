@@ -50,6 +50,14 @@ To edit the **All users** list, start the app from an elevated terminal (or righ
 | `Services/StartMenuService.cs` | Loads the folders and performs rename, delete, create and move |
 | `Services/ShellLink.cs` | Reads and writes `.lnk` files through the shell's `IShellLink` COM interface |
 
+## Tests
+
+```powershell
+dotnet test tests\StartMenuEditor.Tests
+```
+
+The xUnit tests run the service operations (load, rename, create folder, move, delete) against a temporary folder, and round-trip real `.lnk` files through the `ShellLink` wrapper. They never touch your actual Start menu. The two delete tests send a tiny temp item to the Recycle Bin each, since that is what the app does.
+
 ## Status
 
-The project builds and starts. The file operations and shortcut editing have not yet been covered by automated tests, so try changes on a throwaway folder in the **Current user** root first.
+The project builds, starts, and its service layer is covered by the automated tests above. The WPF interface itself (dialogs, drag and drop) has not been tested automatically, so try changes on a throwaway folder in the **Current user** root first.

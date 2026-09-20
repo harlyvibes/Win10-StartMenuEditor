@@ -4,6 +4,8 @@ A small WPF app for tidying the **All apps** list of the Windows 10 Start menu. 
 
 > **Scope:** shortcuts and folders only. Editing Start **tiles** (pinned layout) is deliberately not supported.
 
+![Start Menu Editor in dark mode, with the Narrator shortcut selected and its target shown on the right](docs/screenshots/main-dark.png)
+
 ## Download
 
 Get the latest build from the [latest release](https://github.com/harlyvibes/Win10-StartMenuEditor/releases/latest) - download `StartMenuEditor-<version>-win-x64.exe` and run it. It is a small single file for 64-bit Windows 10 or later that uses the .NET runtime already on your machine, so you need the **.NET 8 Desktop Runtime (x64)** installed. If it is missing, Windows will offer a link to install it, or get it from the [.NET 8 download page](https://dotnet.microsoft.com/download/dotnet/8.0). The SHA-256 checksum is listed in each release's notes.
@@ -24,6 +26,20 @@ The exe is not code-signed, so Windows SmartScreen may show a warning the first 
 - Create, rename and delete folders and shortcuts. Deletes go to the Recycle Bin, so they can be undone.
 - Drag and drop a shortcut or folder into another folder to move it.
 - Edit a `.lnk` shortcut's target, arguments, start-in folder and comment. Only fields you change are written back, so shortcuts that point at special shell items are left intact.
+
+## Screenshots
+
+**Right-click menu** - New folder, Rename and Delete on any entry, with `F2` and `Del` as shortcuts:
+
+![The right-click menu open on the Narrator shortcut](docs/screenshots/context-menu.png)
+
+**Search** - filters as you type and finds entries wherever they live, including ones an installer placed directly in the `Start Menu` folder, like Corsair's iCUE:
+
+![Searching for "icue" shows Corsair, then iCUE, then the iCUE shortcut, with its real location and target](docs/screenshots/search.png)
+
+**Light mode** - dark is the default, and one click switches:
+
+![The same window in light mode](docs/screenshots/main-light.png)
 
 ## Limitations
 
@@ -64,6 +80,7 @@ dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile
 | `Models/StartMenuNode.cs` | Tree node for a root, folder or shortcut |
 | `Services/StartMenuService.cs` | Loads the folders and performs rename, delete, create and move |
 | `Services/ShellLink.cs` | Reads and writes `.lnk` files through the shell's `IShellLink` COM interface |
+| `docs/screenshots/` | The images used in this README |
 
 ## Tests
 
